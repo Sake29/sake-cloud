@@ -4,6 +4,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+/**
+ * 视图控制器
+ * 用于控制视图的跳转
+ *
+ * @author WSY
+ * @date 2020/12/16
+ */
 @Controller
 public class ViewController {
     @GetMapping("/login")

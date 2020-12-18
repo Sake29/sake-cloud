@@ -11,5 +11,6 @@ public interface UserMapper {
 
     User getUserBy(@Param("username") String username);
 
-    int insert(@Param("username")String userName, @Param("password")String password);
+    //TODO: 返回主键
+    void insert(@Param("user") User user);
 }

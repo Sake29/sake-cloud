@@ -2,6 +2,7 @@ package com.sake.sakecloud.controller;
 
 import com.sake.sakecloud.entity.User;
 import com.sake.sakecloud.service.UserService;
+import com.sake.sakecloud.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * 用户控制器
+ * 用于用户登录和注册
  *
  * @author WSY
  * @date 2020/12/14
@@ -24,6 +26,7 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
 
 
     @PostMapping("/login")
@@ -85,8 +88,7 @@ public class UserController {
         user = new User();
         user.setUsername(userName);
         user.setPassword(password);
-        int i = userService.registerNewUser(user);
-        log.info(String.valueOf(i));
+        userService.registerNewUser(user);
         log.info("用户:"+ userName +"注册成功！");
         request.getSession().setAttribute("userName",userName);
         view.addObject("userName",userName);

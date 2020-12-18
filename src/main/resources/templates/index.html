@@ -4,9 +4,305 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <script th:src="@{/vendor/jquery/jquery-1.4.4.min.js}"></script>
+    <script th:src="@{/vendor/jquery/jquery.ztree.all.min.js}"></script>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/metroStyle/metroStyle.css}">
 </head>
 <body>
-Hello! <div th:text="${userName}"></div>
+Hello! <a th:text="${userName}"></a>
 <a th:href="@{/logout}">退出登录</a>
+<div style="width: 100%">
+    <div style="width:20%;float:left;">
+        <ul id="dictionaryTree" class="ztree"></ul>
+    </div>
+
+    <div style="width:80%;float:left;">
+        <ul id="fileTree" class="ztree"></ul>
+    </div>
+</div>
+
+
+
+<!--<form action="" method="post" enctype="multipart/form-data">
+    &lt;!&ndash; html5支持选择文件夹上传 &ndash;&gt;
+    选择文件夹
+    <input type="file" name="folder" multiple webkitdirectory>
+    <button type="submit" id="uploadDictionary">上传</button>
+</form>-->
+<!-- ztree -->
+<script>
+    //文件夹树设置参数
+    var settings = {
+        async: {
+          enable: true
+        },
+
+        data: {
+            simpleData: {
+                enable: true,  //true 、 false 分别表示 使用 、 不使用 简单数据模式
+                idKey: "id",   //节点数据中保存唯一标识的属性名称
+                pIdKey: "pid", //节点数据中保存其父节点唯一标识的属性名称
+                rootPId: ""
+            }
+        },
+        //页面上的显示效果
+        view: {
+            addHoverDom: addHoverDom, //当鼠标移动到节点上时，显示用户自定义控件
+            removeHoverDom: removeHoverDom, //离开节点时的操作,隐藏自定义控件
+            selectedMulti: false,
+            dblClickExpand: false
+        },
+        edit: {
+            enable: true, //单独设置为true时，可加载修改、删除图标
+            editNameSelectAll: true,
+            removeTitle: "删除",
+            renameTitle: "重命名",
+            showRemoveBtn:showRemoveBtn,//判断是否显示删除按钮。根节点不显示
+            showRenameBtn:showRenameBtn,//判断是否显示重命名按钮。根节点不显示
+        },
+        callback: {
+            onClick: dictionaryClick,
+            onRename: zTreeOnRename,//修改
+            //onRemove: zTreeOnRemove,//删除
+            beforeRename: beforeRename,
+            //beforeRemove: beforeRemove
+        }
+    };
+
+    //文件树设置参数
+    var settings1 = {
+        data: {
+            simpleData: {
+                enable: true,  //true 、 false 分别表示 使用 、 不使用 简单数据模式
+                idKey: "id",   //节点数据中保存唯一标识的属性名称
+                pIdKey: "pid", //节点数据中保存其父节点唯一标识的属性名称
+                rootPId: ""
+            }
+        },
+        //页面上的显示效果
+        view: {
+            selectedMulti: false
+        },
+        edit: {
+            enable: true, //单独设置为true时，可加载修改、删除图标
+            editNameSelectAll: true,
+            removeTitle: "删除",
+            renameTitle: "重命名",
+        },
+        callback: {
+            //onClick: fileClick,
+            onDblClick: fileDbClick,
+            //onRename: zTreeOnRename,//修改
+            //onRemove: zTreeOnRemove,//删除
+        }
+    };
+    /**
+     * 单击文件夹树节点，在文件树中显示所有文件
+     * @param event
+     * @param treeId
+     * @param treeNode
+     */
+    function dictionaryClick(event,treeId,treeNode) {
+
+        var zTree = $.fn.zTree.getZTreeObj("dictionaryTree");
+        zTree.expandNode(treeNode);
+        var filePath = treeNode.id
+        filePath = encodeURIComponent(filePath);
+        $.ajax({
+            type: "get",
+            url: "http://localhost:8080/file/details?filePath="+filePath,
+            dataType: "json",
+            success: function (res) {
+                zTreeObj = $.fn.zTree.init($("#fileTree"), settings1, res); //初始化树
+                zTreeObj.expandAll(false);   //true 节点全部展开、false节点收缩
+            }
+        });
+
+    }
+
+    /**
+     * 双击下载文件
+     * @param event
+     * @param treeId
+     * @param treeNode
+     */
+    function fileDbClick(event, treeId, treeNode) {
+        alert("下载中...请稍等...")
+        var filePath = treeNode.id
+        filePath = encodeURIComponent(filePath);
+        window.location.href = "/file/download?filePath="+filePath;
+    }
+
+    /**
+     * 判断是否显示删除按钮
+     * @param treeId
+     * @param treeNode
+     */
+    function showRemoveBtn(treeId, treeNode) {
+        if (treeNode.level == 0) return false;//根节点不可删除
+        else return true;//!treeNode.isFirstNode;
+    }
+
+    /**
+     * 判断是否显示重命名按钮
+     * @param treeId
+     * @param treeNode
+     */
+    function showRenameBtn(treeId, treeNode) {
+        if (treeNode.level == 0) return false;//根节点不可编辑
+        else return true;//!!treeNode.isLastNode;
+    }
+
+    /**
+     * 加载添加按钮
+     * @param treeId
+     * @param treeNode
+     */
+    function addHoverDom(treeId, treeNode) {
+        var sObj = $("#" + treeNode.tId + "_span"); //获取节点信息
+        if (treeNode.editNameFlag || $("#addBtn_"+treeNode.tId).length>0) return;
+        var addStr = "<span class='button add' id='addBtn_" + treeNode.tId + "' title='add node' οnfοcus='this.blur();'></span>"; //定义添加按钮
+        sObj.after(addStr); //加载添加按钮
+        var btn = $("#addBtn_"+treeNode.tId);
+        if (btn) btn.bind("click", function () {
+            var zTree = $.fn.zTree.getZTreeObj("tree");
+            alert("上传文件至："+treeNode.id)
+            easyUpload();
+            //增加节点的方法
+/*            $.ajax({
+                url: "AddNode",
+                data: { ParentId: treeNode.id },
+                type: "post",
+                success: function (data) {
+                    if (data.message == "success") {
+                        //此方法是js在前段增加节点方法，一定要通过后台返回的id来增加，不然新增的节点会出现节点id为null的问题
+                        zTree.addNodes(treeNode, { id: data.id, ParentId: treeNode.id, name: "new node" + (newCount++) });
+                    }
+                    else {
+                        $.messageBox5s('@Resource.Tip', "新增节点失败！联系管理员！");
+                    }
+                }
+            })
+            return false;*/
+        });
+    }
+
+    /**
+     * 离开节点时的操作
+     * @param treeId
+     * @param treeNode
+     */
+    function removeHoverDom(treeId, treeNode) {
+        $("#addBtn_"+treeNode.tId).unbind().remove();
+    };
+
+    /**
+     * 重命名之前，调用后端接口，修改本地文件名
+     * @param treeId
+     * @param treeNode
+     * @param newName 重命名后的名字
+     * @param isCancel
+     */
+    function beforeRename(treeId, treeNode,newName, isCancel) {
+        let str = treeNode.id.split("\\");
+        var oldName = str[str.length-1];
+        if (oldName == newName) {
+            isCancel = false;
+            return;
+        }
+        var filepath = encodeURIComponent(treeNode.id);
+        $.ajax({
+            url: "http://localhost:8080/file/rename",
+            type: "post",
+            data: { filepath: filepath,newName: newName},
+            success: function (res) {
+                if (res.status == 0) {
+                    isCancel = true;
+                    alert("重命名成功！")
+                }
+                else {
+                    isCancel = false;
+                    alert("重命名失败！原因："+res.msg);
+                    //TODO:只刷新该节点，不要刷新整个页面
+                    location.reload();
+                }
+            }
+    })
+    }
+
+    /**
+     * 重命名节点
+     * @param event
+     * @param treeId
+     * @param treeNode
+     * @param isCancel
+     */
+    function zTreeOnRename(event, treeId, treeNode,isCancel) {
+    };
+
+
+    //删除节点
+    function zTreeOnRemove(event, treeId, treeNode) {
+        {
+            var username = '[[${userName}]]';
+            $.ajax({
+                url: "http://localhost:8080/file/delete",
+                type: "post",
+                data: { nodeId: treeNode.id,username: username},
+                success: function (data) {
+                    if (data == "success") {
+
+
+                    }
+                    else {
+                        $.messageBox5s('@Resource.Tip', "删除节点失败！联系管理员！");
+                    }
+                }
+            })
+        }
+    }
+
+
+
+    $(document).ready(function () {
+        var username = '[[${userName}]]';
+        $.ajax({
+            type: "get",
+            url: "http://localhost:8080/file/user?userName="+username,
+            dataType: "json",
+            success: function (res) {
+                zTreeObj = $.fn.zTree.init($("#dictionaryTree"), settings, res); //初始化树
+                zTreeObj.expandAll(false);   //true 节点全部展开、false节点收缩
+            }
+        });
+    });
+</script>
+<!-- upload -->
+<script>
+    function easyUpload(){
+        var input = document.createElement("input");
+        input.type = "file";
+        input.click();
+        //input.multiple = true;
+        input.onchange = function(){
+            var file = input.files[1];
+            alert(file)
+            var form = new FormData();
+            form.append("file", file); //第一个参数是后台读取的请求key值
+            form.append("fileName", file.name);
+            form.append("other", "666666"); //实际业务的其他请求参数
+            var xhr = new XMLHttpRequest();
+            var action = "http://localhost:8080/upload.do"; //上传服务的接口地址
+            xhr.open("POST", action);
+            xhr.send(form); //发送表单数据
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState==4 && xhr.status==200){
+                    var resultObj = JSON.parse(xhr.responseText);
+                    //处理返回的数据......
+                }
+            }
+        }
+    }
+</script>
 </body>
 </html>
